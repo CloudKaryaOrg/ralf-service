@@ -1,0 +1,8 @@
+services:
+  ralf-app:
+    build: ./ralf-fe
+    image: ralf-app:latest
+#    container_name: ralf-app
+    ports:
+      - 8501:8501
+    restart: unless-stopped
