@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install system dependencies (if needed)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && apt-get clean
+RUN apt-get update && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 # Copy requirements and install
 COPY requirements.txt .
