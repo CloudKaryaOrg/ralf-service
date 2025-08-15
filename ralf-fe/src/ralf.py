@@ -2,25 +2,28 @@ import os
 import pandas as pd
 import pickle
 import warnings
-# import torch
-import psutil
-import random  # Add this import
+import psutil  # Add this import
+from openai import OpenAI
 
-import google.generativeai as genai
-from openai import OpenAI 
+if os.environ.get('RALF-SERVICE') != '1':
+    import torch
+    from peft import LoraConfig, get_peft_model
+    from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, AutoTokenizer, AutoConfig
+    from transformers.trainer_callback import TrainerCallback
+    from sklearn.model_selection import train_test_split
+    from datasets import Dataset, ClassLabel, Features, Value
+
+    from transformers import AutoConfig
+else:
+    class TrainerCallback:
+        pass
+
 from nltk.corpus import wordnet # Ensure you have the OpenAI Python client installed
 import json
 import re
 
 warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
 
-# from peft import LoraConfig, get_peft_model
-from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, AutoTokenizer, AutoConfig
-from transformers.trainer_callback import TrainerCallback
-from sklearn.model_selection import train_test_split
-from datasets import Dataset, ClassLabel, Features, Value
-
-from transformers import AutoConfig
 
 def estimate_param_count(model_id="distilbert-base-uncased"):
     try:
@@ -114,15 +117,22 @@ class Ralf:
         if not OPENAI_API_KEY and not GEMINI_API_KEY:
             raise ValueError("Either OPENAI_API_KEY or GEMINI_API_KEY must be provided for recommendations.")
 
-        """
-        # Hardware checks
-        self.gpu_available = torch.cuda.is_available()
-        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
-        self.gpu_name = torch.cuda.get_device_name(0) if self.gpu_available else None
-        self.gpu_ram_gb = None
-        if self.gpu_available:
-            props = torch.cuda.get_device_properties(0)
-            self.gpu_ram_gb = round(props.total_memory / (1024 ** 3), 2)
+        if os.environ.get('RALF-SERVICE') != '1':
+            # Hardware checks
+            self.gpu_available = torch.cuda.is_available()
+            self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
+            self.gpu_name = torch.cuda.get_device_name(0) if self.gpu_available else None
+            self.gpu_ram_gb = None
+            if self.gpu_available:
+                props = torch.cuda.get_device_properties(0)
+                self.gpu_ram_gb = round(props.total_memory / (1024 ** 3), 2)
+        else:
+            self.gpu_available = False
+            self.gpu_count = None
+            self.gpu_name = None
+            self.gpu_ram_gb = None
+            self.ram_gb = None
+
         self.ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
 
         print(f"GPU available: {self.gpu_available}")
@@ -131,12 +141,6 @@ class Ralf:
             print(f"GPU name: {self.gpu_name}")
             print(f"GPU RAM: {self.gpu_ram_gb} GB")
         print(f"Available system RAM: {self.ram_gb} GB")
-        """
-        self.gpu_available = None
-        self.gpu_count = None
-        self.gpu_name = None
-        self.gpu_ram_gb = None
-        self.ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
 
         self.golden_dataset = None
         self.platinum_dataset = None
@@ -156,6 +160,7 @@ class Ralf:
         self.open_api_key = OPENAI_API_KEY
         self.gemini_key = GEMINI_API_KEY
         self.hf_token = HF_TOKEN # Stored the HF_TOKEN
+
     def get_llm_client(self):
         """Helper method to get the appropriate LLM client."""
         if self.open_api_key:
@@ -277,7 +282,6 @@ class Ralf:
         print("Label mapping:", self.label_to_id)
 
     def load_and_configure_model(self): # Removed model_name argument
-        '''
         """
         Loads a pre-trained model and configures it for sequence classification with LoRA.
 
@@ -305,7 +309,6 @@ class Ralf:
         self.model.print_trainable_parameters()
 
         print(f"Model loading and LoRA setup completed for '{self.model_name}'.")
-        '''
 
     def initialize_trainer(self, output_dir: str = "./results", save_path: str = "ralf_state.pkl"):
         """
