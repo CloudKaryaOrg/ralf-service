@@ -3,6 +3,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV RALF-SERVICE=1
 
 # Set work directory
 WORKDIR /app

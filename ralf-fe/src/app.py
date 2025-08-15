@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from ralf import Ralf
 import os
-# import torch
+if os.environ.get('RALF-SERVICE') != '1':
+    import torch
 import psutil
 import humanize
 import json
