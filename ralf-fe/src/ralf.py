@@ -4,6 +4,8 @@ import pickle
 import warnings
 import psutil  # Add this import
 from openai import OpenAI
+import humanize
+import google.generativeai as genai
 
 if os.environ.get('RALF-SERVICE') != '1':
     import torch
@@ -15,7 +17,7 @@ if os.environ.get('RALF-SERVICE') != '1':
 
     from transformers import AutoConfig
 else:
-    class TrainerCallback:
+    class TrainerCallback:          # This was created to fix the build error when LLM libraries are not included
         pass
 
 from nltk.corpus import wordnet # Ensure you have the OpenAI Python client installed
@@ -23,6 +25,27 @@ import json
 import re
 
 warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
+
+OPEN_AI_MODEL = "gpt-4-turbo-preview"
+GEMINI_MODEL = "gemini-2.5-flash"
+# ---------------------- SYSTEM INFO ----------------------
+def get_system_info():
+    if os.environ.get('RALF-SERVICE') != '1':
+        gpu_available = torch.cuda.is_available()
+        gpu_info = f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU"
+        gpu_memory = f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A"
+    else:
+        gpu_available = False
+        gpu_info = "N/A"
+        gpu_memory = "N/A"
+
+    ram = humanize.naturalsize(psutil.virtual_memory().total)
+    return {
+        "GPU Available": "✅ Yes" if gpu_available else "❌ No",
+        "GPU Model": gpu_info,
+        "GPU Memory": gpu_memory,
+        "System RAM": ram
+    }
 
 
 def estimate_param_count(model_id="distilbert-base-uncased"):
@@ -117,23 +140,13 @@ class Ralf:
         if not OPENAI_API_KEY and not GEMINI_API_KEY:
             raise ValueError("Either OPENAI_API_KEY or GEMINI_API_KEY must be provided for recommendations.")
 
-        if os.environ.get('RALF-SERVICE') != '1':
-            # Hardware checks
-            self.gpu_available = torch.cuda.is_available()
-            self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
-            self.gpu_name = torch.cuda.get_device_name(0) if self.gpu_available else None
-            self.gpu_ram_gb = None
-            if self.gpu_available:
-                props = torch.cuda.get_device_properties(0)
-                self.gpu_ram_gb = round(props.total_memory / (1024 ** 3), 2)
-        else:
-            self.gpu_available = False
-            self.gpu_count = None
-            self.gpu_name = None
-            self.gpu_ram_gb = None
-            self.ram_gb = None
-
-        self.ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
+        # Hardware checks
+        system_info = get_system_info()
+        self.gpu_available = system_info["GPU Available"] == "✅ Yes"
+        self.gpu_name = system_info["GPU Model"]
+        self.gpu_ram_gb = system_info["GPU Memory"]
+        self.ram_gb = system_info["System RAM"]
+        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
 
         print(f"GPU available: {self.gpu_available}")
         if self.gpu_available:
@@ -167,16 +180,17 @@ class Ralf:
             return {
                 'type': 'openai',
                 'client': OpenAI(api_key=self.open_api_key),
-                'model': "gpt-4-turbo-preview"
+                'model': OPEN_AI_MODEL
           }
         elif self.gemini_key:
             genai.configure(api_key=self.gemini_key)
             return {
                 'type': 'gemini',
-                'client': genai.GenerativeModel('gemini-1.5-pro'),
-                'model': "gemini-1.5-pro"
+                'client': genai.GenerativeModel(GEMINI_MODEL),
+                'model': GEMINI_MODEL
            }
         return None
+
     def get_llm_response(self, client_info, prompt):
         """Helper method to get responses from either OpenAI or Gemini."""
         try:
@@ -202,11 +216,12 @@ class Ralf:
         if hf_token is not None:
             self.hf_token = hf_token
 
-        if open_api_key is not None or gemini_key is not None:
-             if open_api_key is None and gemini_key is None:
-                 raise ValueError("Either open_api_key or gemini_key must be provided.")
-             self.open_api_key = open_api_key
-             self.gemini_key = gemini_key
+        if open_api_key is not None:
+            self.open_api_key = open_api_key
+        elif gemini_key is not None:
+            self.gemini_key = gemini_key
+        else:
+            raise ValueError("Either open_api_key or gemini_key must be provided.")
 
 
     def load_and_process_data(self, df: pd.DataFrame, text_column: str, label_column: str, model_name: str):
@@ -257,7 +272,6 @@ class Ralf:
         # Convert split DataFrames to Hugging Face Datasets
         train_dataset = Dataset.from_pandas(train_df)
         val_dataset = Dataset.from_pandas(val_df)
-
 
         # Initialize the tokenizer using the model name
         if self.model_name is None:
@@ -438,9 +452,7 @@ class Ralf:
 
             # Layer Norm parameters (approximate: 2*hidden_size for gamma and beta)
             layer_norm_params_per_layer = 2 * hidden_size * 2 # Two layer norms per layer typically
-
             transformer_total = num_layers * (total_attn_params_per_layer + ffn_params_per_layer + layer_norm_params_per_layer)
-
             total = embeddings + transformer_total # This estimation might still miss some parameters
 
             return self.format_param_size(total)
@@ -474,30 +486,6 @@ class Ralf:
             dataset_df = pd.DataFrame(columns=["Name", "URL", "Source Column", "Target Column"])
             return llm_df, dataset_df, "Error: Neither OpenAI nor Gemini API key provided (should have been caught in initialization)."
 
-        #if self.open_api_key:
-            #client = OpenAI(api_key=self.open_api_key)
-            #model_to_use = "gpt-4o-mini" # Or another suitable OpenAI model
-            #print("Using OpenAI API for recommendations.")
-        #elif self.gemini_key:
-             # Need to implement Gemini API calls if Gemini key is provided
-             # This is a placeholder - actual Gemini implementation would go here
-             # import google.generativeai as genai
-             # genai.configure(api_key=self.gemini_key)
-             # client = genai.GenerativeModel('gemini-pro') # Or another suitable Gemini model
-             # model_to_use = 'gemini-pro'
-             # print("Using Gemini API for recommendations.")
-             # For now, if only Gemini key is provided, return an error or use a default
-             #llm_df = pd.DataFrame(columns=["Name", "Hugging Face URL", "Model ID", "Parameters"])
-             #dataset_df = pd.DataFrame(columns=["Name", "URL", "Source Column", "Target Column"])
-             #return llm_df, dataset_df, "Error: Gemini API implementation is not yet available in Ralf."
-
-        #else:
-            # This case should ideally not be reached due to the __init__ validation
-            #llm_df = pd.DataFrame(columns=["Name", "Hugging Face URL", "Model ID", "Parameters"])
-            #dataset_df = pd.DataFrame(columns=["Name", "URL", "Source Column", "Target Column"])
-            #return llm_df, dataset_df, "Error: Neither OpenAI nor Gemini API key provided (should have been caught in initialization)."
-
-
         # Get the problem type analysis
         try:
             analysis = self.analyze_problem_type(pd.read_csv(input_csv_file), source_col, target_col)
@@ -511,7 +499,6 @@ class Ralf:
              llm_df = pd.DataFrame(columns=["Name", "Hugging Face URL", "Model ID", "Parameters","Description"])
              dataset_df = pd.DataFrame(columns=["Name", "URL", "Source Column", "Target Column"])
              return llm_df, dataset_df, f"Error during problem type analysis: {e}"
-
 
         # Prompt for LLM recommendations and Hugging Face links
         llm_recommendation_prompt = (
@@ -548,15 +535,7 @@ class Ralf:
             f"Problem types reasoning: {reasoning}"
         )
 
-
         try:
-            # Get LLM recommendations and links using the selected client and model
-            #llm_response = client.chat.completions.create(
-                #model=model_to_use,
-                #messages=[{"role": "user", "content": llm_recommendation_prompt}],
-                #max_tokens=512,
-                #temperature=0.1,
-            #)
             llm_content = self.get_llm_response(client_info, llm_recommendation_prompt)
             dataset_content = self.get_llm_response(client_info, dataset_recommendation_prompt)
             llm_match = re.search(r'\{.*\}', llm_content, re.DOTALL)
@@ -571,23 +550,25 @@ class Ralf:
                     "Model ID": info.get("model_id", "N/A"),
                     "Parameters": self.estimate_param_count(info.get("model_id", "N/A")),
                     "Description": info.get("description", "N/A")
-                  } for info in llm_recommendations.get('llm_info', [])  # Use the estimate_param_count method
+                } for info in llm_recommendations.get('llm_info', [])  # Use the estimate_param_count method
             ]
-            dataset_data = [{
-                "Name": golden_dataset_info['golden_dataset_info'].get("name", "N/A"),
-                "URL": golden_dataset_info['golden_dataset_info'].get("url", "N/A"),
-                "Source Column": golden_dataset_info['golden_dataset_info'].get("source_column", "N/A"),
-                "Target Column": golden_dataset_info['golden_dataset_info'].get("target_column", "N/A")
-            }]
+            dataset_data = [
+                {
+                    "Name": golden_dataset_info['golden_dataset_info'].get("name", "N/A"),
+                    "URL": golden_dataset_info['golden_dataset_info'].get("url", "N/A"),
+                    "Source Column": golden_dataset_info['golden_dataset_info'].get("source_column", "N/A"),
+                    "Target Column": golden_dataset_info['golden_dataset_info'].get("target_column", "N/A")
+                }
+            ]
 
             return pd.DataFrame(llm_data), pd.DataFrame(dataset_data), analysis  # Return the DataFrames and analysis
+
         except Exception as e:
             # Handle cases where the API call fails or returns unexpected results
             # Return empty DataFrames and the error message
             llm_df = pd.DataFrame(columns=["Name", "Hugging Face URL", "Model ID", "Parameters","Description"])
             dataset_df = pd.DataFrame(columns=["Name", "URL", "Source Column", "Target Column"])
             analysis = f"Error calling API: {e}"
-
 
     def analyze_problem_type(self, df, source_col, target_col):
         """Analyze the problem type using either OpenAI or Gemini."""
@@ -623,6 +604,7 @@ class Ralf:
             return json.loads(content)  # If no match, return the content directly
         except Exception as e:
             return f"Error analyzing problem type: {str(e)}"
+
     def lustrate_data(self):
         """Clean the dataset: remove empty, duplicate or irrelevant rows"""
         before = len(self.df)

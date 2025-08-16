@@ -1,11 +1,8 @@
 import streamlit as st
 import pandas as pd
+from ralf import get_system_info
 from ralf import Ralf
 import os
-if os.environ.get('RALF-SERVICE') != '1':
-    import torch
-import psutil
-import humanize
 import json
 
 st.set_page_config(
@@ -37,27 +34,20 @@ st.markdown("""
         background-color: #FFE8E6;
         color: #D8000C;
     }
+    .dataset-table th {
+        text-align: center !important;
+        font-weight: bold !important;
+        padding: 12px 8px;
+        border: 1px solid #ddd;
+    }
+    .dataset-table td {
+        text-align: left;
+        padding: 8px;
+        border: 1px solid #ddd;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------------- SYSTEM INFO ----------------------
-def get_system_info():
-    if os.environ.get('RALF-SERVICE') != '1':
-        gpu_available = torch.cuda.is_available()
-        gpu_info = f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU"
-        gpu_memory = f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A"
-    else:
-        gpu_available = False
-        gpu_info = "N/A"
-        gpu_memory = "N/A"
-
-    ram = humanize.naturalsize(psutil.virtual_memory().total)
-    return {
-        "GPU Available": "✅ Yes" if gpu_available else "❌ No",
-        "GPU Model": gpu_info,
-        "GPU Memory": gpu_memory,
-        "System RAM": ram
-    }
 
 # ---------------------- MAIN ----------------------
 def main():
@@ -166,6 +156,7 @@ def main():
         else:
             st.info("Please upload your dataset in the sidebar first.")
 
+
     # ---------------------- RECOMMENDATION TAB ----------------------
     with tabs[1]:
         st.header("Model Recommendation")
@@ -213,11 +204,25 @@ def main():
                     if pd.notnull(row["Hugging Face URL"]) and pd.notnull(row["Name"]) else row["Name"], axis=1
                 )
             llm_df.insert(0, "S.No", range(1, len(llm_df) + 1))
-            display_df = llm_df[["S.No", "Name", "Parameters", "Description"]]
-            st.markdown(llm_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            llm_df.style.set_table_styles([
+                    {'selector': 'th', 'props': [('text-align', 'center')]}
+                ])
+            st.markdown(llm_df.to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
+
+        if 'dataset_df' in st.session_state and not st.session_state['dataset_df'].empty:
+            st.subheader("Recommended Datasets")
+            dataset_df = st.session_state['dataset_df'].copy()
+            if "Name" in dataset_df.columns and "URL" in dataset_df.columns:
+                dataset_df["Name"] = dataset_df.apply(
+                    lambda row: f'<a href="{row["URL"]}" target="_blank">{row["Name"]}</a>'
+                    if pd.notnull(row["URL"]) and pd.notnull(row["Name"]) else row["Name"], axis=1
+                )
+            dataset_df.insert(0, "S.No", range(1, len(dataset_df) + 1))
+            
+            st.markdown(dataset_df.to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
 
-    # Augmentation Tab
+    # ---------------------- AUGMENTATION TAB ----------------------
     with tabs[2]:
         st.header("Data Augmentation")
         if 'df' in st.session_state:
@@ -241,6 +246,9 @@ def main():
                     st.error(f"Error during augmentation: {str(e)}")
             else:
                 st.info("Please upload and analyze your dataset first to apply augmentation.")
+
+
+    # ---------------------- LUSTRATION TAB ----------------------
     with tabs[3]:
         st.header("Data Lustration(Cleaning & Preprocessing)")
         #if 'df' in st.session_state:
@@ -269,8 +277,7 @@ def main():
                 #st.info("Please upload and analyze your dataset first to apply lustration.")
 
 
-
-    # Training Tab
+    # ---------------------- TRAINING TAB ----------------------
     with tabs[4]:
         st.header("Model Futureproofing")
         if 'selected_models' in st.session_state:

@@ -6,4 +6,5 @@ evaluate
 openai
 psutil
 humanize
+google-generativeai
 nltk

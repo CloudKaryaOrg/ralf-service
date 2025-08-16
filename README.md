@@ -6,6 +6,9 @@ This is the frontend interface for RALF framework to manage the LLM applications
 Option 1: Build and deploy using docker compose. The image is currently built with the intension to push to docker repository. After the build and deployment, a manual push is required.
 **This should be modified to push to the private artifacts repository.
 ```
+# To build the image using docker compose
+docker compose build ralf-app
+To run a container
 docker compose up
 To shutdown
 docker compose down
