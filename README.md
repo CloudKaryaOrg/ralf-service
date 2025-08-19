@@ -30,4 +30,7 @@ docker run -p 8501:8501 --rm -t ralf-app
 
 ## To Do
 1. Merge the Ralf class back to the CloudKaryaOrg/ralf repository
-2. Split the application into 3 containers: frontend, eval-report, and training/fine-tuning
+2. Split the application into 3 containers: frontend and eval-report
+
+## Completed
+1. Split training/finetuning functions into another class 
