@@ -34,16 +34,19 @@ def get_system_info():
         gpu_available = torch.cuda.is_available()
         gpu_info = f"{torch.cuda.get_device_name(0)}" if gpu_available else "No GPU"
         gpu_memory = f"{torch.cuda.get_device_properties(0).total_memory/1024**3:.2f} GB" if gpu_available else "N/A"
+        gpu_count = torch.cuda.device_count() if gpu_available else 0
     else:
         gpu_available = False
         gpu_info = "N/A"
         gpu_memory = "N/A"
+        gpu_count = 0
 
     ram = humanize.naturalsize(psutil.virtual_memory().total)
     return {
         "GPU Available": "✅ Yes" if gpu_available else "❌ No",
         "GPU Model": gpu_info,
         "GPU Memory": gpu_memory,
+        "GPU Count": gpu_count,
         "System RAM": ram
     }
 

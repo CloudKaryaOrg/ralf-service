@@ -8,7 +8,6 @@ from nltk.corpus import wordnet # Ensure you have the OpenAI Python client insta
 import json
 import re
 import random
-import torch
 from ralf_train import RalfTraining, get_system_info, RalfSavingCallback
 
 warnings.filterwarnings("ignore")  # Ignore warnings for cleaner output
@@ -36,7 +35,7 @@ class Ralf(RalfTraining):
         self.gpu_name = system_info["GPU Model"]
         self.gpu_ram_gb = system_info["GPU Memory"]
         self.ram_gb = system_info["System RAM"]
-        self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
+        self.gpu_count = system_info["GPU Count"]
 
         print(f"GPU available: {self.gpu_available}")
         if self.gpu_available:
