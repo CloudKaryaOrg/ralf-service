@@ -6,10 +6,10 @@ ENV PYTHONUNBUFFERED=1
 ENV RALF-SERVICE=1
 
 # Set work directory
-WORKDIR /app
+WORKDIR /ralf
 
 # Install system dependencies (if needed)
-RUN apt-get update && rm -rf /var/lib/apt/lists/* && apt-get clean
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 # Copy requirements and install
 COPY requirements.txt .
@@ -17,10 +17,10 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
-COPY src ./src
+COPY ralf ./ralf
 
 # Expose Streamlit port
 EXPOSE 8501
 
 # Run Streamlit app
-CMD ["streamlit", "run", "src/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "ralf/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
