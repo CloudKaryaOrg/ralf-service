@@ -118,7 +118,7 @@ def main():
         st.header("Dataset Analysis")
         if 'df' in st.session_state:
             st.subheader("Data Preview")
-            st.dataframe(st.session_state['df'].head())
+            st.markdown(st.session_state['df'].head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
             with col1:
@@ -150,7 +150,7 @@ def main():
                         cleaned_df.drop_duplicates(inplace=True)
                     st.session_state['df'] = cleaned_df
                     st.success("Data cleaned successfully!")
-                    st.dataframe(cleaned_df.head())
+                    st.markdown(cleaned_df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"Error during data cleaning: {str(e)}")
         else:
@@ -204,13 +204,10 @@ def main():
                     if pd.notnull(row["Hugging Face URL"]) and pd.notnull(row["Name"]) else row["Name"], axis=1
                 )
             llm_df.insert(0, "S.No", range(1, len(llm_df) + 1))
-            llm_df.style.set_table_styles([
-                    {'selector': 'th', 'props': [('text-align', 'center')]}
-                ])
             st.markdown(llm_df.to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
         if 'dataset_df' in st.session_state and not st.session_state['dataset_df'].empty:
-            st.subheader("Recommended Datasets")
+            st.subheader("Recommended Golden Datasets")
             dataset_df = st.session_state['dataset_df'].copy()
             if "Name" in dataset_df.columns and "URL" in dataset_df.columns:
                 dataset_df["Name"] = dataset_df.apply(
@@ -224,28 +221,86 @@ def main():
 
     # ---------------------- AUGMENTATION TAB ----------------------
     with tabs[2]:
-        st.header("Data Augmentation")
-        if 'df' in st.session_state:
+        st.header("Model Training & Scoring")
+
+        if 'df' in st.session_state and 'llm_df' in st.session_state:
             df = st.session_state['df']
+            llm_df = st.session_state['llm_df']
+
             st.subheader("Original Dataset")
-            st.dataframe(df.head())
-            st.markdown("### Augmentation Options")
-            aug_type = st.selectbox(
-                "Select augmentation type",
-                ["Synonym Replacement", "Back Translation", "Random Swap"])
-            num_aug = st.slider("Number of augmented examples per orginal", 1, 5, 2)
-            if st.button("Apply Augmentation"):
+            st.markdown(df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
+
+            if st.button("Train & Score All Models"):
+                from sklearn.model_selection import train_test_split
+                results = []
+
+            # Split into train & validation sets
+                train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+
                 try:
-                    with st.spinner("Applying augmentation..."):
-                        augmented_df = df.copy()
-                        augmented_df["augmented_text"] = df[st.session_state['source_col']] + " (augmented)"
-                        st.session_state['augmented_df'] = augmented_df
-                        st.success("Augmentation applied successfully!")
-                        st.dataframe(augmented_df.head())
+                    with st.spinner("Training and scoring models..."):
+                        for _, model_row in llm_df.iterrows():
+                            model_name = model_row["Name"]
+                            model_id = model_row.get("Model ID") or model_row.get("Hugging Face URL", "")
+
+                            st.write(f"🔄 Training model: **{model_name}**")
+
+                            try:
+                                ralf = Ralf(
+                                    HF_TOKEN=hf_token,
+                                    OPENAI_API_KEY=openai_key,
+                                    GEMINI_API_KEY=gemini_key
+                                )
+
+                            # Load and process data
+                                ralf.load_and_process_data(
+                                    train_df,
+                                    st.session_state['source_col'],
+                                    st.session_state['target_col'],
+                                    model_id
+                                )
+
+                            # Initialize trainer with LoRA/fallback logic
+                                ralf.initialize_trainer(model_id)
+
+                            # Train the model
+                                ralf.trainer.train()
+
+                            # Evaluate on validation set
+                                metrics = ralf.trainer.evaluate()
+                                score = metrics.get("eval_accuracy") or metrics.get("eval_f1") or 0
+
+                                results.append({
+                                    "Model": model_name,
+                                    "loss": metrics["eval_loss"],
+                                    "accuracy": metrics["eval_accuracy"],
+                                    "precision": metrics["eval_precision"],
+                                    "recall": metrics["eval_recall"],
+                                    "f1": metrics["eval_f1"],
+                                    "Score": score
+                                })
+
+                            except Exception as e:
+                                st.warning(f"⚠️ Skipping {model_name} due to error: {str(e)}")
+                                continue
+
+                    if results:
+                    # Display sorted results
+                        results_df = pd.DataFrame(results).sort_values(by="Score", ascending=False)
+                        st.subheader("Model Scores")
+                        st.dataframe(results_df)
+
+                    # Highlight best model
+                        best_model = results_df.iloc[0]
+                        st.success(f"🏆 Most reliable model: {best_model['Model']} with score {best_model['Score']}")
+                    else:
+                        st.error("No models were successfully trained.")
+
                 except Exception as e:
-                    st.error(f"Error during augmentation: {str(e)}")
-            else:
-                st.info("Please upload and analyze your dataset first to apply augmentation.")
+                    st.error(f"Unexpected error during training/scoring: {str(e)}")
+
+        else:
+            st.info("Please upload a dataset and get model recommendations first.")
 
 
     # ---------------------- LUSTRATION TAB ----------------------
@@ -254,7 +309,7 @@ def main():
         #if 'df' in st.session_state:
             #df = st.session_state['df']
             #st.write("Original Dataset:")
-            #st.dataframe(df.head())
+            #st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
             #remove_nulls = st.checkbox("Remove rows with missing values")
             #lowercase_text = st.checkbox("Convert text to lowercase")
             #remove_duplicates = st.checkbox("Remove duplicate rows")
@@ -270,7 +325,7 @@ def main():
                         #cleaned_df.drop_duplicates(inplace=True)
                     #st.session_state['cleaned_df'] = cleaned_df
                     #st.success("Data cleaned successfully!")
-                    #st.dataframe(cleaned_df.head())
+                    #st.markdown(cleaned_df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
                 #except Exception as e:
                     #st.error(f"Error during data cleaning: {str(e)}")
             #else:
