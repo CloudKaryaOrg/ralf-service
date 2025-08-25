@@ -118,7 +118,6 @@ def main():
         st.header("Dataset Analysis")
         if 'df' in st.session_state:
             st.subheader("Data Preview")
-            st.markdown(st.session_state['df'].head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
             with col1:
@@ -131,6 +130,7 @@ def main():
                     "Select target column",
                     [col for col in st.session_state['df'].columns if col != st.session_state['source_col']]
                 )
+            st.markdown(st.session_state['df'].head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
             # Data cleaning (moved from Lustration tab)
             st.subheader("Data Cleaning")
