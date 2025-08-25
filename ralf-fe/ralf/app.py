@@ -253,7 +253,7 @@ def main():
                                 )
 
                             # Load and process data
-                                ralf.RalfTraining.load_and_process_data(
+                                ralf.load_and_process_data(
                                     train_df,
                                     st.session_state['source_col'],
                                     st.session_state['target_col'],
@@ -261,13 +261,13 @@ def main():
                                 )
 
                             # Initialize trainer with LoRA/fallback logic
-                                ralf.RalfTraining.initialize_trainer(model_id)
+                                ralf.initialize_trainer(model_id)
 
                             # Train the model
-                                ralf.RalfTraining.train()
+                                ralf.train()
 
                             # Evaluate on validation set
-                                metrics = ralf.RalfTraining.trainer.evaluate()
+                                metrics = ralf.trainer.evaluate()
                                 score = metrics.get("eval_accuracy") or metrics.get("eval_f1") or 0
 
                                 results.append({
@@ -357,13 +357,13 @@ def main():
                                   GEMINI_API_KEY=gemini_key)
                         total_models = len(st.session_state['selected_models'])
                         for idx, model_id in enumerate(st.session_state['selected_models']):
-                            ralf.RalfTraining.load_and_process_data(
+                            ralf.load_and_process_data(
                                 st.session_state['df'],
                                 st.session_state['source_col'],
                                 st.session_state['target_col'],
                                 model_id
                             )
-                            ralf.RalfTraining.load_and_configure_model()
+                            ralf.load_and_configure_model()
                             total_steps = epochs * (len(st.session_state['df']) // batch_size)
                             current_step = 0
                             def update_progress(step_info):
@@ -371,8 +371,8 @@ def main():
                                 current_step += 1
                                 progress = min((idx + current_step / total_steps) / total_models, 1.0)
                                 progress_bar.progress(progress)
-                            ralf.RalfTraining.trainer.add_callback(update_progress)
-                            ralf.RalfTraining.trainer.train()
+                            ralf.trainer.add_callback(update_progress)
+                            ralf.train()
                         progress_bar.progress(1.0)
                         st.success("Training completed for all recommended models!")
                 except Exception as e:
