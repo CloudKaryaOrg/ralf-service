@@ -230,8 +230,8 @@ def main():
             st.subheader("Original Dataset")
             st.markdown(df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
-            model_options = llm_df["Name"].tolist()
-            selected_modelsAug = st.multiselect("Select models to train", model_options)
+            model_optionsAug = llm_df["Name"].tolist()
+            selected_modelsAug = st.multiselect("Select models to train", model_optionsAug)
             st.session_state['selected_modelsAug'] = []
             for model in selected_modelsAug:
                 model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
@@ -352,8 +352,8 @@ def main():
         # Select models to train
         if 'llm_df' in st.session_state and not st.session_state['llm_df'].empty:
             llm_df = st.session_state['llm_df']
-            model_options = llm_df["Name"].tolist()
-            selected_modelsTrn = st.multiselect("Select models to train", model_options)
+            model_optionsTrn = llm_df["Name"].tolist()
+            selected_modelsTrn = st.multiselect("Select models to train", model_optionsTrn)
             st.session_state['selected_modelsTrn'] = []
             for model in selected_modelsTrn:
                 model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
