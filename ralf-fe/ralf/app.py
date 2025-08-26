@@ -264,7 +264,7 @@ def main():
                                 ralf.initialize_trainer(model_id)
 
                             # Train the model
-                                ralf.trainer()
+                                ralf.trainer.train()
 
                             # Evaluate on validation set
                                 metrics = ralf.trainer.evaluate()
