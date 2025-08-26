@@ -313,18 +313,18 @@ def main():
             df = st.session_state['df']
             st.write("Original Dataset:")
             st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
-            remove_nulls = st.checkbox("Remove rows with missing values")
-            lowercase_text = st.checkbox("Convert text to lowercase")
-            remove_duplicates = st.checkbox("Remove duplicate rows")
+            remove_nulls2 = st.checkbox("Remove rows with missing values")
+            lowercase_text2 = st.checkbox("Convert text to lowercase")
+            remove_duplicates2 = st.checkbox("Remove duplicate rows")
             if st.button("Clean Data"):
                 try:
                     cleaned_df = df.copy()
-                    if remove_nulls:
+                    if remove_nulls2:
                         cleaned_df.dropna(inplace=True)
-                    if lowercase_text:
+                    if lowercase_text2:
                         cleaned_df[st.session_state['source_col']] = cleaned_df[st.session_state['source_col']].str.lower()
                         cleaned_df[st.session_state['target_col']] = cleaned_df[st.session_state['target_col']].str.lower()
-                    if remove_duplicates:
+                    if remove_duplicates2:
                         cleaned_df.drop_duplicates(inplace=True)
                     st.session_state['cleaned_df'] = cleaned_df
                     st.success("Data cleaned successfully!")
@@ -350,13 +350,13 @@ def main():
                     st.session_state['selected_models'].append(model_id)
 
         if 'selected_models' in st.session_state:
-            col1, col2 = st.columns(2)
-            with col1:
+            col41, col42 = st.columns(2)
+            with col41:
                 epochs = st.number_input("Number of epochs", min_value=1, value=3)
                 batch_size = st.number_input("Batch size", min_value=1, value=16)
                 st.session_state['epochs'] = epochs
                 st.session_state['batch_size'] = batch_size
-            with col2:
+            with col42:
                 learning_rate = st.number_input("Learning rate", min_value=0.0, value=2e-5)
                 output_dir = st.text_input("Output directory", value="./results")
                 st.session_state['learning_rate'] = learning_rate
