@@ -309,6 +309,7 @@ def main():
     # ---------------------- LUSTRATION TAB ----------------------
     with tabs[3]:
         st.header("Data Lustration(Cleaning & Preprocessing)")
+        '''
         if 'df' in st.session_state:
             df = st.session_state['df']
             st.write("Original Dataset:")
@@ -333,7 +334,7 @@ def main():
                     st.error(f"Error during data cleaning: {str(e)}")
             else:
                 st.info("Please upload and analyze your dataset first to apply lustration.")
-
+        '''
 
     # ---------------------- TRAINING TAB ----------------------
     with tabs[4]:
