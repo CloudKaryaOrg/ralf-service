@@ -251,19 +251,18 @@ def main():
                                     OPENAI_API_KEY=openai_key,
                                     GEMINI_API_KEY=gemini_key
                                 )
-                                """
-                                ralf.load_and_process_data(
-                                    train_df,
-                                    st.session_state['source_col'],
-                                    st.session_state['target_col'],
-                                    model_id
-                                )
+                                
+                                #ralf.load_and_process_data(
+                                #    train_df,
+                                #    st.session_state['source_col'],
+                                #    st.session_state['target_col'],
+                                #    model_id
+                                #)
 
                                 # Initialize trainer with LoRA/fallback logic
-                                ralf.initialize_trainer(model_id)
-                                ralf.trainer.train()
-                                metrics = ralf.trainer.evaluate()
-                                """
+                                #ralf.initialize_trainer(model_id)
+                                #ralf.trainer.train()
+                                #metrics = ralf.trainer.evaluate()
 
                                 metrics = ralf.augment_train_eval(
                                     train_df,
@@ -309,32 +308,33 @@ def main():
     # ---------------------- LUSTRATION TAB ----------------------
     with tabs[3]:
         st.header("Data Lustration(Cleaning & Preprocessing)")
-        '''
-        if 'df' in st.session_state:
-            df = st.session_state['df']
-            st.write("Original Dataset:")
-            st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
-            remove_nulls2 = st.checkbox("Remove rows with missing values")
-            lowercase_text2 = st.checkbox("Convert text to lowercase")
-            remove_duplicates2 = st.checkbox("Remove duplicate rows")
-            if st.button("Clean Data"):
-                try:
-                    cleaned_df = df.copy()
-                    if remove_nulls2:
-                        cleaned_df.dropna(inplace=True)
-                    if lowercase_text2:
-                        cleaned_df[st.session_state['source_col']] = cleaned_df[st.session_state['source_col']].str.lower()
-                        cleaned_df[st.session_state['target_col']] = cleaned_df[st.session_state['target_col']].str.lower()
-                    if remove_duplicates2:
-                        cleaned_df.drop_duplicates(inplace=True)
-                    st.session_state['cleaned_df'] = cleaned_df
-                    st.success("Data cleaned successfully!")
-                    st.markdown(cleaned_df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Error during data cleaning: {str(e)}")
-            else:
-                st.info("Please upload and analyze your dataset first to apply lustration.")
-        '''
+        if False:
+            '''
+            if 'df' in st.session_state:
+                df = st.session_state['df']
+                st.write("Original Dataset:")
+                st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
+                remove_nulls2 = st.checkbox("Remove rows with missing values")
+                lowercase_text2 = st.checkbox("Convert text to lowercase")
+                remove_duplicates2 = st.checkbox("Remove duplicate rows")
+                if st.button("Clean Data"):
+                    try:
+                        cleaned_df = df.copy()
+                        if remove_nulls2:
+                            cleaned_df.dropna(inplace=True)
+                        if lowercase_text2:
+                            cleaned_df[st.session_state['source_col']] = cleaned_df[st.session_state['source_col']].str.lower()
+                            cleaned_df[st.session_state['target_col']] = cleaned_df[st.session_state['target_col']].str.lower()
+                        if remove_duplicates2:
+                            cleaned_df.drop_duplicates(inplace=True)
+                        st.session_state['cleaned_df'] = cleaned_df
+                        st.success("Data cleaned successfully!")
+                        st.markdown(cleaned_df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"Error during data cleaning: {str(e)}")
+                else:
+                    st.info("Please upload and analyze your dataset first to apply lustration.")
+            '''
 
     # ---------------------- TRAINING TAB ----------------------
     with tabs[4]:
