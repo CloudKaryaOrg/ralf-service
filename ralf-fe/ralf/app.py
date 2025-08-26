@@ -231,7 +231,7 @@ def main():
             st.markdown(df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
             model_optionsAug = llm_df["Name"].tolist()
-            selected_modelsAug = st.multiselect("Select models to train", model_optionsAug)
+            selected_modelsAug = st.multiselect("Select models to trainand evaluate", model_optionsAug)
             st.session_state['selected_modelsAug'] = []
             for model in selected_modelsAug:
                 model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
