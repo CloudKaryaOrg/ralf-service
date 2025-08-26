@@ -12,4 +12,4 @@ streamlit==1.48.1
 transformers==4.55.2
 git+https://github.com/CloudKaryaOrg/ralf.git@peeya
 torch
-peft
+peft==0.17.0
