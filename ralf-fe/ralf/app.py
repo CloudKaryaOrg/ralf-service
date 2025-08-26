@@ -231,12 +231,12 @@ def main():
             st.markdown(df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
             model_options = llm_df["Name"].tolist()
-            selected_models = st.multiselect("Select models to train", model_options)
-            st.session_state['selected_models'] = []
-            for model in selected_models:
+            selected_modelsAug = st.multiselect("Select models to train", model_options)
+            st.session_state['selected_modelsAug'] = []
+            for model in selected_modelsAug:
                 model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
                 if model_id:
-                    st.session_state['selected_models'].append(model_id)
+                    st.session_state['selected_modelsAug'].append(model_id)
 
             if st.button("Train & Score All Models"):
                 from sklearn.model_selection import train_test_split
@@ -248,7 +248,7 @@ def main():
                 try:
                     with st.spinner("Training and scoring models..."):
                         for _, model_row in llm_df.iterrows():
-                            if model_row["Name"] not in selected_models:
+                            if model_row["Name"] not in selected_modelsAug:
                                 continue    # Bypass if not selected
                             model_name = model_row["Name"]
                             model_id = model_row.get("Model ID") or model_row.get("Hugging Face URL", "")
@@ -353,14 +353,14 @@ def main():
         if 'llm_df' in st.session_state and not st.session_state['llm_df'].empty:
             llm_df = st.session_state['llm_df']
             model_options = llm_df["Name"].tolist()
-            selected_models = st.multiselect("Select models to train", model_options)
-            st.session_state['selected_models'] = []
-            for model in selected_models:
+            selected_modelsTrn = st.multiselect("Select models to train", model_options)
+            st.session_state['selected_modelsTrn'] = []
+            for model in selected_modelsTrn:
                 model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
                 if model_id:
-                    st.session_state['selected_models'].append(model_id)
+                    st.session_state['selected_modelsTrn'].append(model_id)
 
-        if 'selected_models' in st.session_state:
+        if 'selected_modelsTrn' in st.session_state:
             col41, col42 = st.columns(2)
             with col41:
                 epochs = st.number_input("Number of epochs", min_value=1, value=3)
@@ -380,8 +380,8 @@ def main():
                         ralf = Ralf(HF_TOKEN=hf_token, 
                                   OPENAI_API_KEY=openai_key, 
                                   GEMINI_API_KEY=gemini_key)
-                        total_models = len(st.session_state['selected_models'])
-                        for idx, model_id in enumerate(st.session_state['selected_models']):
+                        total_models = len(st.session_state['selected_modelsTrn'])
+                        for idx, model_id in enumerate(st.session_state['selected_modelsTrn']):
                             ralf.load_and_process_data(
                                 st.session_state['df'],
                                 st.session_state['source_col'],
