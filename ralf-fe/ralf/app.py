@@ -230,6 +230,14 @@ def main():
             st.subheader("Original Dataset")
             st.markdown(df.head().to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
+            model_options = llm_df["Name"].tolist()
+            selected_models = st.multiselect("Select models to train", model_options)
+            st.session_state['selected_models'] = []
+            for model in selected_models:
+                model_id = llm_df[llm_df["Name"] == model].iloc[0].get("Model ID") or llm_df[llm_df["Name"] == model].iloc[0].get("Hugging Face URL", "")
+                if model_id:
+                    st.session_state['selected_models'].append(model_id)
+
             if st.button("Train & Score All Models"):
                 from sklearn.model_selection import train_test_split
                 results = []
@@ -240,6 +248,8 @@ def main():
                 try:
                     with st.spinner("Training and scoring models..."):
                         for _, model_row in llm_df.iterrows():
+                            if model_row["Name"] not in selected_models:
+                                continue    # Bypass if not selected
                             model_name = model_row["Name"]
                             model_id = model_row.get("Model ID") or model_row.get("Hugging Face URL", "")
 
