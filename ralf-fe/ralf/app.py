@@ -372,7 +372,7 @@ def main():
                                 progress = min((idx + current_step / total_steps) / total_models, 1.0)
                                 progress_bar.progress(progress)
                             ralf.trainer.add_callback(update_progress)
-                            ralf.trainer()
+                            ralf.trainer.train()
                         progress_bar.progress(1.0)
                         st.success("Training completed for all recommended models!")
                 except Exception as e:
