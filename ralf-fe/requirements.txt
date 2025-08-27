@@ -1,6 +1,7 @@
 datasets==4.0.0
 evaluate==0.4.5
 google-generativeai==0.8.5
+GPUtil==1.4.0
 humanize==4.12.3
 nltk==3.9.1
 openai==1.100.0
@@ -10,3 +11,5 @@ scikit-learn==1.7.1
 streamlit==1.48.1
 transformers==4.55.2
 git+https://github.com/CloudKaryaOrg/ralf.git
+torch
+peft==0.17.0

@@ -7,7 +7,7 @@ Option 1: Build and deploy using docker compose. The image is currently built wi
 **This should be modified to push to the private artifacts repository.
 ```
 # To build the image using docker compose. This command builds a universal image even if it is executed by the macos
-docker compose build ralf-app
+docker compose build --no-cache ralf-app
 
 To run the container
 docker compose up
