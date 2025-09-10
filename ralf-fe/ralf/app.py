@@ -111,7 +111,7 @@ def main():
                 st.error(f"Error reading CSV file: {str(e)}")
 
     # Tabs
-    tabs = st.tabs(["Analysis", "Recommendation", "Augmentation", "Lustration", "Futureproofing"])
+    tabs = st.tabs(["Analysis", "Recommendation", "Augmentation", "Lustration", "Futureproofing", "Database Update"])
 
     # ---------------------- ANALYSIS TAB ----------------------
     with tabs[0]:
@@ -321,14 +321,6 @@ def main():
 
         if 'df' in st.session_state:
             df = st.session_state['df']
-            dataset_name = st.text_input("Dataset Name", type = "default", placeholder=uploaded_file.name)
-            dataset_rev = st.text_input("Dataset Revision", placeholder="1.0")
-
-            if st.button("Save as Dataset Set"):
-                mongo_uri = os.getenv("MONGODB_URI")
-                st.write(f"Dataset Name: {dataset_name}")
-                st.write(f"Database URI: {mongo_uri}")
-
             st.write("Loaded Dataset:")
             st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
@@ -394,6 +386,32 @@ def main():
                     st.error(f"Error during training: {str(e)}")
         else:
             st.info("Please analyze your dataset and get model recommendations first.")
+
+
+    # ---------------------- LUSTRATION TAB ----------------------
+    with tabs[5]:
+        from pymongo import MongoClient
+
+        st.header("Updating Dataset in Database")
+
+        if 'df' in st.session_state:
+            df = st.session_state['df']
+            dataset_name = st.text_input("Dataset Name", type = "default", placeholder=uploaded_file.name)
+            dataset_rev = st.text_input("Dataset Revision", placeholder="1.0")
+
+            if st.button("Save as Dataset Set"):
+                mongo_uri = os.getenv("MONGODB_URI")
+                client = MongoClient(mongo_uri)
+                db = client['dataset_db']       # Set the database
+                collection = db['questions']    # Set the collection
+
+                st.write(f"Dataset Name: {dataset_name}")
+
+            st.write("Loaded Dataset:")
+            st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
+
+        else:
+            st.info("Please upload and analyze your dataset first to apply lustration.")
 
 
 if __name__ == "__main__":
