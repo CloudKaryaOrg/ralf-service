@@ -6,4 +6,25 @@ services:
     container_name: ralf-app
     ports:
       - 8501:8501
+    environment:
+      - PYTHONPATH=/app
+      # google_service_account is mapped from the secret file below
+      # - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_service_account
+# Secret keys
+    secrets:
+      # - google_service_account
+      - api_keys.sh
+
+# Mount local volume to container for development
+    volumes:
+      - ./secret:/app/secret
+
     restart: unless-stopped
+
+# Docker Compose automatically mounts the secret file into the container at
+# /run/secrets/<secret_name>.
+secrets:
+#  google_service_account:
+#    file: ./secret/service-acc-key-focal-woods.json
+  api_keys.sh:
+    file: ./secret/api_keys.sh

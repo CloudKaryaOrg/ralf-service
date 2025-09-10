@@ -17,9 +17,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
 COPY ralf ./ralf
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 # Expose Streamlit port
 EXPOSE 8501
 
 # Run Streamlit app
-CMD ["streamlit", "run", "ralf/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# CMD ["streamlit", "run", "ralf/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Entrypoint script to export secrets and run app
+ENTRYPOINT ["./docker-entrypoint.sh"]

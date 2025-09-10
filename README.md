@@ -2,12 +2,21 @@
 
 This is the frontend interface for RALF framework to manage the LLM applications in enterprises. It is the acronym for: Recommend, Augmentation, Lustration, and Futureproofing.
 
+## **Important** step to create secret keys for the app
+Create a folder named "secret" in the ralf-service folder to store the API keys
+Create a file named "api_keys.sh" with the strings and keys for the following environment variables
+```
+MONGODB_URI="mongodb+srv://<username>:<password>@ralf-db.tj5izvq.mongodb.net/?retryWrites=true&w=majority&appName=ralf-db
+```
+
 ## To build and run the image
 Option 1: Build and deploy using docker compose. The image is currently built with the intension to push to docker repository. After the build and deployment, a manual push is required.
 **This should be modified to push to the private artifacts repository.
 ```
 # To build the image using docker compose. This command builds a universal image even if it is executed by the macos
 docker compose build --no-cache ralf-app
+OR for faster build using cached image after the initial build
+docker compose build ralf-app
 
 To run the container
 docker compose up
