@@ -111,7 +111,7 @@ def main():
                 st.error(f"Error reading CSV file: {str(e)}")
 
     # Tabs
-    tabs = st.tabs(["Analysis", "Recommendation", "Augmentation", "Lustration", "Futureproofing", "Database Update"])
+    tabs = st.tabs(["Analysis", "Recommendation", "Augmentation", "Lustration", "Futureproofing", "DataSet Update"])
 
     # ---------------------- ANALYSIS TAB ----------------------
     with tabs[0]:
@@ -388,25 +388,34 @@ def main():
             st.info("Please analyze your dataset and get model recommendations first.")
 
 
-    # ---------------------- LUSTRATION TAB ----------------------
+    # ---------------------- DATASET UPDATE TAB ----------------------
     with tabs[5]:
         from pymongo import MongoClient
 
         st.header("Updating Dataset in Database")
 
         if 'df' in st.session_state:
-            df = st.session_state['df']
-            dataset_name = st.text_input("Dataset Name", type = "default", placeholder=uploaded_file.name)
-            dataset_rev = st.text_input("Dataset Revision", placeholder="1.0")
 
-            if st.button("Save as Dataset Set"):
+            dataset_type, tag = st.columns(2)
+            with dataset_type:
+                st.session_state['dataset_type'] = st.selectbox(
+                    "Select Dataset Type",
+                    ["Classification", "Summarization", "Translation", "Code Gen/Completion", "Reasoning",
+                     "Instruction", "Safety & Refusal"]
+                )
+            with tag:
+                tag = st.text_input("Tag for the Dataset", placeholder="1.0")
+
+
+            if st.button("Save Dataset Set"):
                 mongo_uri = os.getenv("MONGODB_URI")
                 client = MongoClient(mongo_uri)
                 db = client['dataset_db']       # Set the database
                 collection = db['questions']    # Set the collection
 
-                st.write(f"Dataset Name: {dataset_name}")
+                st.write(f"Result: {st.session_state['dataset_type']}, {tag}")
 
+            df = st.session_state['df']
             st.write("Loaded Dataset:")
             st.markdown(df.head(10).to_html(escape=False, index=False, classes='dataset-table'), unsafe_allow_html=True)
 
