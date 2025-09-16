@@ -1,0 +1,5 @@
+    steps:
+    - name: 'gcr.io/cloud-builders/docker'
+      args: ['build', '-t', 'gcr.io/focal-woods-252003/ralf-service', 'ralf-fe']
+    - name: 'gcr.io/cloud-builders/docker'
+      args: ['push', 'gcr.io/focal-woods-252003/ralf-service']
